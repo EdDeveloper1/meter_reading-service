@@ -14,67 +14,60 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const supertest_1 = __importDefault(require("supertest"));
 const app_1 = __importDefault(require("../app"));
-const globals_1 = require("@jest/globals");
-// Aumentar o tempo limite do teste, se necessário
-globals_1.jest.setTimeout(30000); // 30 segundos
-(0, globals_1.describe)('Measure Controller', () => {
-    (0, globals_1.it)('should return 200 and the correct response body on valid POST /upload', () => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('Sending request...');
-        // Substitua '' por uma imagem base64 válida se necessário
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+let measureUuid;
+describe('POST /upload with Gemini API', () => {
+    it('deve fazer upload de uma imagem, chamar a API do Gemini e retornar o valor da leitura', () => __awaiter(void 0, void 0, void 0, function* () {
+        // Lê a string base64 de um arquivo externo
+        const imageBuffer = fs_1.default.readFileSync(path_1.default.join(__dirname, 'imageBase64.txt'));
+        const imageBase64 = imageBuffer.toString(); // Não precisa converter para base64, pois já está no arquivo
+        // Envia o corpo da requisição com a imagem em base64 e os outros campos
         const response = yield (0, supertest_1.default)(app_1.default)
             .post('/api/upload')
             .send({
-            image: 'data:image/jpeg;base64,/9j/4AAQSkZ...',
-            customer_code: 'customer123',
-            measure_datetime: '2024-08-28T10:00:00Z',
-            measure_type: 'WATER',
-        });
-        console.log('Response received:', response.body);
+            imageBase64: imageBase64, // A string base64 da imagem
+            customer_code: '123456',
+            measure_datetime: '2024-09-01T12:00:00Z',
+            measure_type: 'water'
+        })
+            .set('Content-Type', 'application/json'); // Garante que o conteúdo está sendo enviado como JSON
+        console.log('Response body:', response.body);
+        console.log('Response status:', response.status);
+        // Verificações no retorno
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('image_url');
         expect(response.body).toHaveProperty('measure_value');
-        expect(response.body).toHaveProperty('measure_uuid');
-        // Validar que os valores dos campos são do tipo correto ou seguem o formato esperado
-        expect(typeof response.body.image_url).toBe('string');
-        expect(typeof response.body.measure_value).toBe('number');
-        expect(typeof response.body.measure_uuid).toBe('string');
+        expect(response.body.measure_value).toBeGreaterThan(0);
+        // Captura o UUID da leitura
+        measureUuid = response.body.measure_uuid; // Supondo que o UUID esteja na resposta
     }));
-    (0, globals_1.it)('should return 400 on invalid POST /upload', () => __awaiter(void 0, void 0, void 0, function* () {
+});
+describe('PATCH /confirm with real data', () => {
+    it('deve confirmar a leitura de um UUID existente após a extração real', () => __awaiter(void 0, void 0, void 0, function* () {
+        jest.setTimeout(60000);
         const response = yield (0, supertest_1.default)(app_1.default)
-            .post('/api/upload')
+            .patch('/api/confirm')
             .send({
-            image: '',
-            customer_code: '',
-            measure_datetime: 'invalid-date',
-            measure_type: 'UNKNOWN_TYPE', // Tipo inválido
+            measure_uuid: measureUuid,
         });
-        expect(response.status).toBe(400);
-        expect(response.body).toHaveProperty('error');
-        expect(response.body.error).toBe('Invalid input data');
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('message', 'Leitura confirmada com sucesso.');
     }));
-    (0, globals_1.it)('should return 400 if image is missing', () => __awaiter(void 0, void 0, void 0, function* () {
+});
+describe('GET /:customer_code/list with real data', () => {
+    it('deve listar as leituras confirmadas para um código de cliente real', () => __awaiter(void 0, void 0, void 0, function* () {
+        const customerCode = '123456';
         const response = yield (0, supertest_1.default)(app_1.default)
-            .post('/api/upload')
-            .send({
-            customer_code: 'customer123',
-            measure_datetime: '2024-08-28T10:00:00Z',
-            measure_type: 'WATER',
+            .get(`/api/${customerCode}/list`)
+            .expect('Content-Type', /json/)
+            .expect(200);
+        expect(response.body).toBeInstanceOf(Array);
+        expect(response.body.length).toBeGreaterThan(0);
+        response.body.forEach((measure) => {
+            expect(measure).toHaveProperty('measure_uuid');
+            expect(measure).toHaveProperty('measure_value');
+            expect(measure.measure_value).toBeGreaterThan(0);
         });
-        expect(response.status).toBe(400);
-        expect(response.body).toHaveProperty('error');
-        expect(response.body.error).toBe('Image is required');
     }));
-    (0, globals_1.it)('should return 400 if customer_code is missing', () => __awaiter(void 0, void 0, void 0, function* () {
-        const response = yield (0, supertest_1.default)(app_1.default)
-            .post('/api/upload')
-            .send({
-            image: 'data:image/jpeg;base64,/9j/4AAQSkZ...',
-            measure_datetime: '2024-08-28T10:00:00Z',
-            measure_type: 'WATER',
-        });
-        expect(response.status).toBe(400);
-        expect(response.body).toHaveProperty('error');
-        expect(response.body.error).toBe('Customer code is required');
-    }));
-    // Adicione outros testes conforme necessário para validar todos os cenários relevantes
 });

@@ -1,16 +1,25 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import measureRoutes from './routes/measureRoutes';
-import connectDB from './database';
+import sequelize from './database/sequelize'; // Importando Sequelize diretamente
+require('dotenv').config();
 
 const app = express();
-app.use(bodyParser.json()); 
 
-app.use(express.json({ limit: '100mb' })); 
-app.use(express.urlencoded({ limit: '100mb', extended: true }));
+// Configurar o limite máximo para requisições JSON e URL-encoded
+app.use(bodyParser.json({ limit: '100000mb' }));
+app.use(bodyParser.urlencoded({ limit: '100000mb', extended: true }));
 
+// Rotas
 app.use('/api', measureRoutes);
 
-connectDB();
+// Conexão com o banco de dados usando Sequelize
+sequelize.authenticate()
+  .then(() => {
+    console.log('Conexão com o banco de dados estabelecida com sucesso.');
+  })
+  .catch((err: Error) => {
+    console.error('Erro ao conectar-se ao banco de dados:', err);
+  });
 
 export default app;

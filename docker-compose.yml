@@ -6,10 +6,11 @@ services:
     environment:
       - PORT=3000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - DATABASE_URL=${DATABASE_URL}
     depends_on:
       mysql:
         condition: service_healthy
+    env_file:
+      - .env
 
   mysql:
     image: mysql:8.0
@@ -23,8 +24,8 @@ services:
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 60s
       timeout: 5s
 
 volumes:

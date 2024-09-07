@@ -1,5 +1,8 @@
 import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as fs from 'fs';
+import * as path from 'path';
+import axios from 'axios';
 
 class LLMService {
     private genAI: GoogleGenerativeAI;
@@ -10,29 +13,52 @@ class LLMService {
         this.fileManager = new GoogleAIFileManager(apiKey);
     }
 
-    /**
-     * Faz o upload da imagem para a API da Gemini e retorna a URI da imagem.
-     * @param imageBase64 Base64 da imagem a ser enviada.
-     * @param displayName Nome de exibição da imagem no sistema.
-     * @param mimeType Tipo MIME da imagem (e.g., 'image/jpeg').
-     * @returns URI da imagem armazenada.
-     */
     async uploadImage(imageBase64: string, displayName: string, mimeType: string): Promise<string> {
-        const uploadResponse = await this.fileManager.uploadFile(displayName, {
-            mimeType,
-            displayName,
-        });
-        return uploadResponse.file.uri;
-    }
+        try {
+            // Converter a string base64 para um buffer
+            const imageBuffer = Buffer.from(imageBase64, 'base64');
+            const tempImagePath = path.join(__dirname, '..', '..', 'temp', `${displayName}.${mimeType.split('/')[1]}`);
+    
+            // Verificar se o diretório temporário existe, caso contrário, criar
+            const tempDir = path.dirname(tempImagePath);
+            if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
+            }
+    
+            // Escrever o arquivo temporário no sistema de arquivos
+            fs.writeFileSync(tempImagePath, imageBuffer);
+    
+            
+            // Fazer o upload do arquivo usando fileManager
+            const uploadResponse = await this.fileManager.uploadFile(tempImagePath, {
+                mimeType: mimeType,
+                displayName: displayName,
+              });
 
-    /**
-     * Processa a imagem enviada para extrair o valor do medidor usando a API Gemini.
-     * @param imageUri URI da imagem armazenada no serviço Gemini.
-     * @param mimeType Tipo MIME da imagem (e.g., 'image/jpeg').
-     * @returns Valor extraído do medidor.
-     */
+            // Exibe a resposta
+            console.log(`Arquivo enviado: ${uploadResponse.file.displayName}`);
+            console.log(`URI do arquivo: ${uploadResponse.file.uri}`);
+    
+            // Apagar o arquivo temporário após o upload
+            fs.unlinkSync(tempImagePath);
+    
+            // Retornar a URI do arquivo após o upload
+            return uploadResponse.file.uri;
+        } catch (error) {
+            // Tratar erro com checagem de tipo
+            if (error instanceof Error) {
+                console.error('Erro ao fazer a solicitação:', error.message);
+            } else {
+                console.error('Erro desconhecido:', error);
+            }
+    
+            // Lançar erro com uma mensagem personalizada
+            throw new Error('Falha no upload da imagem.');
+        }
+    }
+    
     async extractMeterValue(imageUri: string, mimeType: string): Promise<number> {
-        const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
         const result = await model.generateContent([
             {
                 fileData: {
@@ -42,16 +68,19 @@ class LLMService {
             },
             { text: "Extract the meter reading value from this image." },
         ]);
-
-        // Assume que o resultado seja um número no texto retornado
-        const meterValue = parseInt(result.response.text(), 10);
-
-        if (isNaN(meterValue)) {
+    
+        // Extrair o número da resposta de texto usando expressão regular
+        const meterValueMatch = result.response.text().match(/\d+/);
+    
+        if (!meterValueMatch) {
             throw new Error("Failed to extract a valid meter reading value from the image.");
         }
-
+    
+        const meterValue = parseInt(meterValueMatch[0], 10);
+    
         return meterValue;
     }
+    
 }
 
 export default LLMService;

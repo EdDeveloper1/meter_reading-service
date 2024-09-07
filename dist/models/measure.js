@@ -1,36 +1,54 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __importStar(require("mongoose"));
-const MeasureSchema = new mongoose_1.Schema({
-    customer_code: { type: String, required: true },
-    measure_datetime: { type: Date, required: true },
-    measure_type: { type: String, required: true, enum: ['WATER', 'GAS'] },
-    measure_value: { type: Number },
-    image_url: { type: String, required: true },
-    measure_uuid: { type: String, required: true, unique: true },
-    has_confirmed: { type: Boolean, default: false },
+const sequelize_1 = require("sequelize");
+const sequelize_2 = __importDefault(require("../database/sequelize"));
+class Measure extends sequelize_1.Model {
+}
+Measure.init({
+    measure_uuid: {
+        type: sequelize_1.DataTypes.STRING(36),
+        primaryKey: true,
+        defaultValue: sequelize_1.DataTypes.UUIDV4,
+    },
+    customer_code: {
+        type: sequelize_1.DataTypes.STRING(255),
+        allowNull: false,
+    },
+    measure_datetime: {
+        type: sequelize_1.DataTypes.DATE,
+        allowNull: false,
+    },
+    measure_type: {
+        type: sequelize_1.DataTypes.STRING(255),
+        allowNull: false,
+    },
+    measure_value: {
+        type: sequelize_1.DataTypes.FLOAT,
+        allowNull: false,
+    },
+    image_url: {
+        type: sequelize_1.DataTypes.STRING(255),
+        allowNull: false,
+    },
+    has_confirmed: {
+        type: sequelize_1.DataTypes.BOOLEAN,
+        defaultValue: false,
+    },
+    createdAt: {
+        type: sequelize_1.DataTypes.DATE,
+        defaultValue: sequelize_1.DataTypes.NOW,
+    },
+    updatedAt: {
+        type: sequelize_1.DataTypes.DATE,
+        defaultValue: sequelize_1.DataTypes.NOW,
+    },
+}, {
+    sequelize: sequelize_2.default,
+    modelName: 'Measure',
+    tableName: 'Measure',
+    timestamps: true,
 });
-exports.default = mongoose_1.default.model('Measure', MeasureSchema);
+exports.default = Measure;

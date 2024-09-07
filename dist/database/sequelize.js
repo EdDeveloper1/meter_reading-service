@@ -22,14 +22,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const app_1 = __importDefault(require("./app"));
+const sequelize_1 = require("sequelize");
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
-const PORT = process.env.PORT || 3000;
-app_1.default.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Configurando a conexão com o banco de dados
+const sequelize = new sequelize_1.Sequelize(process.env.DB_NAME || 'meter_reading_service', process.env.DB_USER || 'root', process.env.DB_PASSWORD || 'password', {
+    host: process.env.DB_HOST || 'localhost',
+    dialect: 'mysql', // Ou 'postgres', 'sqlite', etc.
 });
+exports.default = sequelize;

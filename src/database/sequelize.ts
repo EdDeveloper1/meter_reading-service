@@ -11,12 +11,4 @@ const sequelize = new Sequelize(process.env.DB_NAME || 'meter_reading_service', 
     benchmark: true,       // Mostra o tempo de execução de cada query
 });
 
-sequelize.sync({ force: false })  // force: true recria as tabelas
-  .then(() => {
-    console.log("Tabelas sincronizadas");
-  })
-  .catch((err) => {
-    console.error("Erro ao sincronizar tabelas:", err);
-  });
-
 export default sequelize;

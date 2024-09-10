@@ -34,11 +34,4 @@ const sequelize = new sequelize_1.Sequelize(process.env.DB_NAME || 'meter_readin
     logging: console.log, // Adiciona logs SQL no console
     benchmark: true, // Mostra o tempo de execução de cada query
 });
-sequelize.sync({ force: false }) // force: true recria as tabelas
-    .then(() => {
-    console.log("Tabelas sincronizadas");
-})
-    .catch((err) => {
-    console.error("Erro ao sincronizar tabelas:", err);
-});
 exports.default = sequelize;

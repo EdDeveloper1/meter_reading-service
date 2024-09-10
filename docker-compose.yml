@@ -6,6 +6,7 @@ services:
     environment:
       - PORT=3000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DB_HOST=mysql
     depends_on:
       mysql:
         condition: service_healthy
@@ -31,3 +32,7 @@ services:
 
 volumes:
   mysql_data:
+
+networks:
+  app-network:
+    driver: bridge

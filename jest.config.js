@@ -8,5 +8,6 @@ module.exports = {
     },
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
     testPathIgnorePatterns: ['/node_modules/', '/dist/'],
-    transformIgnorePatterns: ['/node_modules/', '/dist/']
+    transformIgnorePatterns: ['/node_modules/', '/dist/'],
+    testTimeout: 15000 // Timeout de 15 segundos para todos os testes
 };

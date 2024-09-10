@@ -18,8 +18,13 @@ app.use('/api', measureRoutes_1.default);
 sequelize_1.default.authenticate()
     .then(() => {
     console.log('Conexão com o banco de dados estabelecida com sucesso.');
+    // Sincronizar os modelos e criar a tabela se ela não existir
+    return sequelize_1.default.sync({ force: false }); // force: false garante que as tabelas não sejam recriadas
+})
+    .then(() => {
+    console.log('Tabelas sincronizadas com sucesso.');
 })
     .catch((err) => {
-    console.error('Erro ao conectar-se ao banco de dados:', err);
+    console.error('Erro ao conectar-se ao banco de dados ou ao sincronizar tabelas:', err);
 });
 exports.default = app;
